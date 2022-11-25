@@ -6,6 +6,7 @@ import copy
 from math import *
 from scipy.spatial.distance import cdist
 
+
 # Domination check
 def dominate(p, q):
     result = False
@@ -15,6 +16,7 @@ def dominate(p, q):
         elif i > j:  # not greater in any dimension, return false immediately
             return False
     return result
+
 
 def non_dominate_sorting(population):
     # find non-dominated sorted
@@ -37,7 +39,7 @@ def non_dominate_sorting(population):
                 dominated_set[q].append(p)
         # rank 0
         if dominating_num[p] == 0:
-            rank[p] = rank_init # rank set to 0
+            rank[p] = rank_init  # rank set to 0
             sorted_pop[0].append(p)
 
     while len(sorted_pop[rank_init]) > 0:
@@ -56,6 +58,7 @@ def non_dominate_sorting(population):
 
 
 class Individual():
+
     def __init__(self, gene_length):
         self.dec = np.zeros(gene_length, dtype=np.uint8)  ## binary
         for i in range(gene_length):
@@ -111,17 +114,17 @@ def bitwise_mutation(p, p_m):
 # Variation (Crossover & Mutation)
 def variation(population, p_crossover, p_mutation):
     offspring = copy.deepcopy(population)
-    len_pop = int(np.ceil(len(population) / 2) * 2) 
+    len_pop = int(np.ceil(len(population) / 2) * 2)
     candidate_idx = np.random.permutation(len_pop)
 
     # Crossover
-    for i in range(int(len_pop/2)):
-        if np.random.random()<=p_crossover:
+    for i in range(int(len_pop / 2)):
+        if np.random.random() <= p_crossover:
             individual1 = offspring[candidate_idx[i]]
-            individual2 = offspring[candidate_idx[-i-1]]
+            individual2 = offspring[candidate_idx[-i - 1]]
             [child1, child2] = one_point_crossover(individual1, individual2)
             offspring[candidate_idx[i]].dec[:] = child1
-            offspring[candidate_idx[-i-1]].dec[:] = child2
+            offspring[candidate_idx[-i - 1]].dec[:] = child2
 
     # Mutation
     for i in range(len_pop):
@@ -137,7 +140,7 @@ def variation(population, p_crossover, p_mutation):
 # Crowding distance
 def crowding_dist_old(population):
     pop_size = len(population)
-    crowding_dis = np.zeros((pop_size,))
+    crowding_dis = np.zeros((pop_size, ))
 
     obj_dim_size = len(population[0].obj)
     # crowding distance
@@ -179,11 +182,11 @@ def crowding_dist(population, V, ideal):
         Ranks.append(rank_temp)
 
     cwd_dist = crowding_dist_old(population)
-    cwd_dist[rank[-1]] = inf    # Set inf for the knee vector
+    cwd_dist[rank[-1]] = inf  # Set inf for the knee vector
 
-    cwd_rank = np.argsort(cwd_dist)[::-1]    # descending order, large cwd large rank
+    cwd_rank = np.argsort(cwd_dist)[::-1]  # descending order, large cwd large rank
     crowding_dst = np.max(np.squeeze(np.array(Ranks)), axis=0)
-    crowding_dst[np.where(cwd_dist==inf)[0]] = inf
+    crowding_dst[np.where(cwd_dist == inf)[0]] = inf
     crowding_dst = crowding_dst + cwd_rank
 
     return crowding_dst

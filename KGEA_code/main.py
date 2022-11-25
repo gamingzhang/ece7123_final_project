@@ -16,18 +16,20 @@ from pruning import *
 
 
 def evaIndividual(ind):
-  filter_nums = [20, 50, 500, 10]
-  solution = np.ones((sum(filter_nums), 1))
-  solution = ind.reshape(ind.shape[0], 1)
-  solution[-10:] = 1  # Last 10 output should not be changed
-  
-  # Prune model according to the solution
-  model_new = prune_model(model, solution, filter_nums)
-  # Validate
-  acc, loss = test_forward(val_loader, model_new, criterion)  # test_forward(model_new)
-  return 100-acc, np.sum(ind)
+    filter_nums = [20, 50, 500, 10]
+    solution = np.ones((sum(filter_nums), 1))
+    solution = ind.reshape(ind.shape[0], 1)
+    solution[-10:] = 1  # Last 10 output should not be changed
+
+    # Prune model according to the solution
+    model_new = prune_model(model, solution, filter_nums)
+    # Validate
+    acc, loss = test_forward(val_loader, model_new, criterion)  # test_forward(model_new)
+    return 100 - acc, np.sum(ind)
+
 
 class Individual():
+
     def __init__(self, gene_length):
         self.dec = np.zeros(gene_length, dtype=np.uint8)  ## binary
         for i in range(gene_length):
@@ -37,15 +39,17 @@ class Individual():
 
     def evaluate(self):
         self.obj[0], self.obj[1] = evaIndividual(self.dec)
- 
+
+
 def initialization(pop_size, gene_length):
     population = []
     for i in range(pop_size):
         ind = Individual(gene_length)
         population.append(ind)
     return population
-           
-# Global variables, avoid loading data at each generation        
+
+
+# Global variables, avoid loading data at each generation
 val_loader, model, criterion = construct_data_model_criterion()
 
 filter_nums = [20, 50, 500, 10]
@@ -56,7 +60,7 @@ if __name__ == '__main__':
     # configuration
     pop_size = 30  # Population size
     n_obj = 2  # Objective variable dimensionality
-    
+
     dec_dim = sum(filter_nums)  # Decision variable dimensionality
 
     gen = 500  # Iteration number
@@ -68,9 +72,9 @@ if __name__ == '__main__':
     population = initialization(pop_size, dec_dim)
 
     g_begin = 0
-    
+
     path_save = './' + target_dir
-    
+
     for g in range(g_begin + 1, gen):
         # generate reference lines and association
         V, association, ideal = generate_ref_association(population)
