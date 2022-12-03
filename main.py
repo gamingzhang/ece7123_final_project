@@ -1,77 +1,101 @@
 import torch
-import logging
-from datetime import datetime
-from torchvision.datasets import CIFAR10,FashionMNIST,MNIST
-from initialize import *
+import torch.nn as nn
+from torch.autograd import Variable
+import torchvision.datasets as dset
+import torchvision.transforms as transforms
+import torch.nn.functional as F
+import torch.optim as optim
 
-def pre_data(data):
+import numpy as np
+import copy
+import pickle
 
-	if data == 'CIFAR10':
-		
-		data_tf = transforms.Compose([
-						transforms.ToTensor(),
-    					transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-    					])
-
-		''' train data'''
-		train_set = CIFAR10('./data', train=True, transform=data_tf, download=True)
-		train_data = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True)
-
-		''' test data '''
-
-		test_set = CIFAR10('./data', train=False, transform=data_tf, download=True)
-		test_data = torch.utils.data.DataLoader(test_set, batch_size=64, shuffle=False)
-
-		return train_data,test_data
-
-	elif data == 'MNIST':
-		pass
+from utils import *
+from ec import *
+from pruning import *
 
 
-def check_gpu(logger):
-	''' 检查gpu '''
-	if torch.cuda.is_available():
-		try:			
-			gpu_number = int(sys.argv[1])
-			torch.cuda.set_device(gpu_number)
-		except IndexError as e:
-			logger.info('GPU unspecified!')
-		logger.info('GPU DEVICE : %s'%torch.cuda.get_device_name(gpu_number))
-	else:
-   		logger.info('GPU IS UNAVAILABLE!')
+def evaIndividual(ind):
+    filter_nums = [20, 50, 500, 10]
+    solution = np.ones((sum(filter_nums), 1))
+    solution = ind.reshape(ind.shape[0], 1)
+    solution[-10:] = 1  # Last 10 output should not be changed
 
-def main():
-	''' config of logging '''
-	logging.basicConfig(level=logging.DEBUG,
-                    # filename='CIFAR10.txt',
-                    datefmt='%Y/%m/%d %H:%M:%S',
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-	logger = logging.getLogger(__name__)
-	check_gpu(logger)
-
-	program_config = {
-		'data_set':'CIFAR10',
-		'population_size':20,
-		'generation':10,
-		'init_epochs':5,
-		'final_epochs':10
-	}
-
-	individual_config = {
-		'part1_max':10,
-		'part2_max':3,
-		'maps_max':256,
-		'neurons_max':300,
-		'class_number':10
-	}
-
-	start_time = datetime.now()
-	logger.info('----------Begin----------')
-
-	p = population(program_config['population_size'],individual_config)
+    # Prune model according to the solution
+    model_new = prune_model(model, solution, filter_nums)
+    # Validate
+    acc, loss = test_forward(val_loader, model_new, criterion)  # test_forward(model_new)
+    return 100 - acc, np.sum(ind)
 
 
+class Individual():
 
+    def __init__(self, gene_length):
+        self.dec = np.zeros(gene_length, dtype=np.uint8)  ## binary
+        for i in range(gene_length):
+            self.dec[i] = 1  # always begin with 1
+        self.obj = [0, 0]  # initial obj value will be replaced by evaluate()
+        self.evaluate()
+
+    def evaluate(self):
+        self.obj[0], self.obj[1] = evaIndividual(self.dec)
+
+
+def initialization(pop_size, gene_length):
+    population = []
+    for i in range(pop_size):
+        ind = Individual(gene_length)
+        population.append(ind)
+    return population
+
+
+# Global variables, avoid loading data at each generation
+val_loader, model, criterion = construct_data_model_criterion()
+
+filter_nums = [20, 50, 500, 10]
+
+target_dir = 'Results/'
 
 if __name__ == '__main__':
-	main()
+    # configuration
+    pop_size = 30  # Population size
+    n_obj = 2  # Objective variable dimensionality
+
+    dec_dim = sum(filter_nums)  # Decision variable dimensionality
+
+    gen = 500  # Iteration number
+
+    p_crossover = 1  # crossover probability
+    p_mutation = 1  # mutation probability
+
+    # Initialization
+    population = initialization(pop_size, dec_dim)
+
+    g_begin = 0
+
+    path_save = './' + target_dir
+
+    for g in range(g_begin + 1, gen):
+        # generate reference lines and association
+        V, association, ideal = generate_ref_association(population)
+
+        # Variation
+        offspring = variation(population, p_crossover, p_mutation)
+
+        # Update ideal point
+        PopObjs_Offspring = np.array([x.obj for x in offspring])
+        PopObjs_Offspring = np.vstack((ideal, PopObjs_Offspring))
+        ideal = np.min(PopObjs_Offspring, axis=0)
+
+        # P+Q
+        population.extend(offspring)
+
+        # Environmental Selection
+        population = environmental_selection(population, V, ideal, pop_size)
+
+        # generation
+        print('Gen:', g)
+
+        # Save population
+        with open(path_save + "population-{}.pkl".format(g), 'wb') as f:
+            pickle.dump(population, f)
