@@ -57,7 +57,7 @@ filter_nums = [20, 50, 500, 10]
 target_dir = 'Results/'
 
 if __name__ == '__main__':
-    # configuration
+    # Configuration
     pop_size = 30  # Population size
     n_obj = 2  # Objective variable dimensionality
 
