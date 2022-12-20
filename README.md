@@ -24,8 +24,6 @@ In our final project, we propose a novel algorithm based on differential evoluti
 
 `model`: Model checkpoints
 
-After we design a best CNN model, we train 200 epochs until convergence.
-
 ## Supplement
 
 To make it easier and faster to define the Convolutional Neural Networks we need, we use `nn.Sequential()`. Just like stacking blocks, we can freely add as many layers as we need to `nn.Sequential()` to build the Convolutional Neural Networks.
