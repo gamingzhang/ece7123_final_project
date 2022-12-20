@@ -13,10 +13,15 @@ In our final project, we propose a novel algorithm based on differential evoluti
 ## Usage
 
 `dl_final.ipynb`: main file for our algorithm.
-`train_final_model.ipynb`: Used to fully train the best model we design using our algorithm
+
+`train_final_model.ipynb`: Used to fully train the best model we design using our algorithm  
+
 `plot.ipynb`: Used to plot the scatter plot to see the evolution and the loss / accuracy curves of our final models.
+
 `history`: Binary files of loss and accuracy per epoch.
+
 `populations`: Binary files of all populations
+
 `model`: Model checkpoints
 
 After we design a best CNN model, we train 200 epochs until convergence.
